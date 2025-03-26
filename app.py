@@ -290,40 +290,55 @@ with tabs[0]:
     col1, col2, col3, col4 = st.columns(4)
 
     # 1) Total $ Claimed
-    if "repriced_ingredient_cost" in claims.columns:
-        total_cost = claims["repriced_ingredient_cost"].sum()
-        col1.metric("Total $ Claimed", f"${total_cost:,.2f}")
-    else:
-        col1.metric("Total $ Claimed", "N/A")
-        st.warning(
-            "No 'repriced_ingredient_cost' column found; cannot compute Total $ Claimed."
+    try:
+        if "repriced_ingredient_cost" in claims.columns:
+            total_cost = claims["repriced_ingredient_cost"].sum()
+            col1.metric("Total $ Claimed", f"${total_cost:,.2f}")
+        else:
+            col1.metric("Total $ Claimed", "N/A")
+            st.info("💡 Add 'repriced_ingredient_cost' column to see total claim costs")
+    except Exception as e:
+        st.error(
+            "❌ Error calculating Total $ Claimed. Please ensure 'repriced_ingredient_cost' contains valid numeric values."
         )
 
-    # 2) Total Member Paid (New)
-    if "member_paid" in claims.columns:
-        total_member_paid = claims["member_paid"].sum()
-        col2.metric("Total Member Paid", f"${total_member_paid:,.2f}")
-    else:
-        col2.metric("Total Member Paid", "N/A")
+    # 2) Total Member Paid
+    try:
+        if "member_paid" in claims.columns:
+            total_member_paid = claims["member_paid"].sum()
+            col2.metric("Total Member Paid", f"${total_member_paid:,.2f}")
+        else:
+            col2.metric("Total Member Paid", "N/A")
+            st.info("💡 Add 'member_paid' column to see total member payments")
+    except Exception as e:
+        st.error(
+            "❌ Error calculating Total Member Paid. Please ensure 'member_paid' contains valid numeric values."
+        )
 
     # 3) Number of Unique Claimants
-    if "member_id" in claims.columns:
-        unique_claimants = claims["member_id"].nunique()
-        col3.metric("Number of Unique Claimants", f"{unique_claimants:,}")
-    else:
-        col3.metric("Number of Unique Claimants", "N/A")
-        st.warning(
-            "No 'member_id' column found; cannot compute Number of Unique Claimants."
+    try:
+        if "member_id" in claims.columns:
+            unique_claimants = claims["member_id"].nunique()
+            col3.metric("Number of Unique Claimants", f"{unique_claimants:,}")
+        else:
+            col3.metric("Number of Unique Claimants", "N/A")
+            st.info("💡 Add 'member_id' column to see unique claimant counts")
+    except Exception as e:
+        st.error(
+            "❌ Error calculating Unique Claimants. Please ensure 'member_id' column is properly formatted."
         )
 
     # 4) Total Number of Claims
-    if "claimstatus" in claims.columns:
-        total_claims_status = claims["claimstatus"].sum()
-        col4.metric("Total Number of Claims", f"{total_claims_status:,}")
-    else:
-        col4.metric("Total Number of Claims", "N/A")
-        st.warning(
-            "No 'claimstatus' column found; cannot compute Total Number of Claims."
+    try:
+        if "claimstatus" in claims.columns:
+            total_claims_status = claims["claimstatus"].sum()
+            col4.metric("Total Number of Claims", f"{total_claims_status:,}")
+        else:
+            col4.metric("Total Number of Claims", len(claims))  # Use total rows instead
+            st.info("💡 Add 'claimstatus' column for more accurate claim counting")
+    except Exception as e:
+        st.error(
+            "❌ Error calculating Total Claims. Please ensure 'claimstatus' contains valid numeric values."
         )
 
     st.subheader("Disruption Summary by Formulary")
@@ -489,45 +504,64 @@ with tabs[0]:
 
     with col1:
         st.markdown("**Top 5 by Drug Cost (Disrupted in All Formularies)**")
-        if "repriced_ingredient_cost" in claims.columns:
-            cost_top5 = (
-                all_disrupted.groupby("drugname")["repriced_ingredient_cost"]
-                .sum()
-                .sort_values(ascending=False)
-                .head(5)
-                .reset_index()
+        try:
+            if "repriced_ingredient_cost" in claims.columns:
+                cost_top5 = (
+                    all_disrupted.groupby("drugname")["repriced_ingredient_cost"]
+                    .sum()
+                    .sort_values(ascending=False)
+                    .head(5)
+                    .reset_index()
+                )
+                cost_top5.columns = ["Drug Name", "Disrupted Cost"]
+                st.dataframe(cost_top5.style.format({"Disrupted Cost": "${:,.2f}"}))
+            else:
+                st.info(
+                    "💡 Cost data not available. Add 'repriced_ingredient_cost' column to see cost analysis."
+                )
+        except Exception as e:
+            st.error(
+                "❌ Error generating cost analysis. Please ensure 'repriced_ingredient_cost' contains valid numeric values."
             )
-            cost_top5.columns = ["Drug Name", "Disrupted Cost"]
-            st.dataframe(cost_top5.style.format({"Disrupted Cost": "${:,.2f}"}))
-        else:
-            st.info("Cost data not available")
 
     with col2:
         st.markdown("**Top 5 by Claim Count (Disrupted in All Formularies)**")
-        claims_top5 = (
-            all_disrupted.groupby("drugname")
-            .size()
-            .sort_values(ascending=False)
-            .head(5)
-            .reset_index()
-        )
-        claims_top5.columns = ["Drug Name", "Disrupted Claims"]
-        st.dataframe(claims_top5)
-
-    with col3:
-        st.markdown("**Top 5 by Members Affected (Disrupted in All Formularies)**")
-        if "member_id" in claims.columns:
-            members_top5 = (
-                all_disrupted.groupby("drugname")["member_id"]
-                .nunique()
+        try:
+            claims_top5 = (
+                all_disrupted.groupby("drugname")
+                .size()
                 .sort_values(ascending=False)
                 .head(5)
                 .reset_index()
             )
-            members_top5.columns = ["Drug Name", "Members Affected"]
-            st.dataframe(members_top5)
-        else:
-            st.info("Member data not available")
+            claims_top5.columns = ["Drug Name", "Disrupted Claims"]
+            st.dataframe(claims_top5)
+        except Exception as e:
+            st.error(
+                "❌ Error generating claims analysis. Please check your data format."
+            )
+
+    with col3:
+        st.markdown("**Top 5 by Members Affected (Disrupted in All Formularies)**")
+        try:
+            if "member_id" in claims.columns:
+                members_top5 = (
+                    all_disrupted.groupby("drugname")["member_id"]
+                    .nunique()
+                    .sort_values(ascending=False)
+                    .head(5)
+                    .reset_index()
+                )
+                members_top5.columns = ["Drug Name", "Members Affected"]
+                st.dataframe(members_top5)
+            else:
+                st.info(
+                    "💡 Member data not available. Add 'member_id' column to see member analysis."
+                )
+        except Exception as e:
+            st.error(
+                "❌ Error generating member analysis. Please ensure 'member_id' column is properly formatted."
+            )
 
 
 # --------------------
@@ -858,66 +892,83 @@ for i, f_name in enumerate(formularies.keys(), start=2):
 
         # Modified aggregation to avoid column name conflicts
         if group_by == "Drug Name":
-            detailed_exclusions = (
-                df.groupby(group_field)
-                .agg(
-                    {
-                        "Covered": lambda x: "Included" if any(x) else "Excluded",
-                        "GPI_Match": "any",  # Add this to see GPI matches
-                        "Name_Match": "any",  # Add this to see Name matches
-                        "ndc": "nunique",  # Count unique NDCs
-                        "repriced_ingredient_cost": (
-                            "sum"
-                            if "repriced_ingredient_cost" in df.columns
-                            else lambda x: None
-                        ),
-                        "member_id": (
-                            "nunique" if "member_id" in df.columns else lambda x: None
-                        ),
-                    }
-                )
-                .reset_index()
-            )
-            # Rename columns
+            # Build aggregation dictionary dynamically based on available columns
+            agg_dict = {
+                "Covered": lambda x: "Included" if any(x) else "Excluded",
+                "GPI_Match": "any",  # Add this to see GPI matches
+                "Name_Match": "any",  # Add this to see Name matches
+                "ndc": "nunique",  # Count unique NDCs
+            }
+
+            # Add optional columns if they exist
+            if "repriced_ingredient_cost" in df.columns:
+                agg_dict["repriced_ingredient_cost"] = "sum"
+            if "member_id" in df.columns:
+                agg_dict["member_id"] = "nunique"
+
+            detailed_exclusions = df.groupby(group_field).agg(agg_dict).reset_index()
+
+            # Rename columns and add placeholders for missing columns
+            column_mapping = {
+                group_field: "Drug Name",
+                "Covered": "Status",
+                "GPI_Match": "GPI Match",
+                "Name_Match": "Name Match",
+                "ndc": "NDC Count",
+            }
+
+            if "repriced_ingredient_cost" in df.columns:
+                column_mapping["repriced_ingredient_cost"] = "Total Cost"
+            else:
+                detailed_exclusions["Total Cost"] = None
+
+            if "member_id" in df.columns:
+                column_mapping["member_id"] = "Unique Members"
+            else:
+                detailed_exclusions["Unique Members"] = None
+
             detailed_exclusions.columns = [
-                "Drug Name",
-                "Status",
-                "GPI Match",
-                "Name Match",
-                "NDC Count",
-                "Total Cost",
-                "Unique Members",
+                column_mapping.get(col, col) for col in detailed_exclusions.columns
             ]
+
         else:  # NDC view
-            detailed_exclusions = (
-                df.groupby(group_field)
-                .agg(
-                    {
-                        "Covered": lambda x: "Included" if any(x) else "Excluded",
-                        "GPI_Match": "any",  # Add this to see GPI matches
-                        "Name_Match": "any",  # Add this to see Name matches
-                        "drugname": "first",
-                        "repriced_ingredient_cost": (
-                            "sum"
-                            if "repriced_ingredient_cost" in df.columns
-                            else lambda x: None
-                        ),
-                        "member_id": (
-                            "nunique" if "member_id" in df.columns else lambda x: None
-                        ),
-                    }
-                )
-                .reset_index()
-            )
-            # Rename columns
+            # Build aggregation dictionary dynamically based on available columns
+            agg_dict = {
+                "Covered": lambda x: "Included" if any(x) else "Excluded",
+                "GPI_Match": "any",  # Add this to see GPI matches
+                "Name_Match": "any",  # Add this to see Name matches
+                "drugname": "first",
+            }
+
+            # Add optional columns if they exist
+            if "repriced_ingredient_cost" in df.columns:
+                agg_dict["repriced_ingredient_cost"] = "sum"
+            if "member_id" in df.columns:
+                agg_dict["member_id"] = "nunique"
+
+            detailed_exclusions = df.groupby(group_field).agg(agg_dict).reset_index()
+
+            # Rename columns and add placeholders for missing columns
+            column_mapping = {
+                group_field: "NDC",
+                "Covered": "Status",
+                "GPI_Match": "GPI Match",
+                "Name_Match": "Name Match",
+                "drugname": "Drug Name",
+            }
+
+            if "repriced_ingredient_cost" in df.columns:
+                column_mapping["repriced_ingredient_cost"] = "Total Cost"
+            else:
+                detailed_exclusions["Total Cost"] = None
+
+            if "member_id" in df.columns:
+                column_mapping["member_id"] = "Unique Members"
+            else:
+                detailed_exclusions["Unique Members"] = None
+
             detailed_exclusions.columns = [
-                "NDC",
-                "Status",
-                "GPI Match",
-                "Name Match",
-                "Drug Name",
-                "Total Cost",
-                "Unique Members",
+                column_mapping.get(col, col) for col in detailed_exclusions.columns
             ]
 
         # Apply search filter
@@ -938,18 +989,48 @@ for i, f_name in enumerate(formularies.keys(), start=2):
             detailed_exclusions = detailed_exclusions[mask]
 
         # Format and display the table
-        fmt_dict = {}
-        if "Total Cost" in detailed_exclusions.columns:
-            fmt_dict["Total Cost"] = "${:,.2f}"
+        try:
+            fmt_dict = {}
+            if "Total Cost" in detailed_exclusions.columns:
 
-        def highlight_status(row):
-            color = "background-color: "
-            color += "#e6ffe6" if row["Status"] == "Included" else "#ffe6e6"
-            return [color] * len(row)
+                def currency_format(x):
+                    if pd.isna(x) or x is None or x == "N/A":
+                        return "N/A"
+                    try:
+                        return f"${float(x):,.2f}"
+                    except (ValueError, TypeError):
+                        return str(x)
 
-        st.dataframe(
-            detailed_exclusions.style.apply(highlight_status, axis=1).format(fmt_dict),
-            height=400,
-            hide_index=True,
-            use_container_width=True,  # Make table use full width
-        )
+                fmt_dict["Total Cost"] = currency_format
+
+            if "Unique Members" in detailed_exclusions.columns:
+
+                def member_format(x):
+                    if pd.isna(x) or x is None or x == "N/A":
+                        return "N/A"
+                    try:
+                        return f"{int(x):,}"
+                    except (ValueError, TypeError):
+                        return str(x)
+
+                fmt_dict["Unique Members"] = member_format
+
+            def highlight_status(row):
+                color = "background-color: "
+                color += "#e6ffe6" if row["Status"] == "Included" else "#ffe6e6"
+                return [color] * len(row)
+
+            display_df = detailed_exclusions.copy()
+            display_df = display_df.fillna("N/A")
+
+            st.dataframe(
+                display_df.style.apply(highlight_status, axis=1).format(fmt_dict),
+                height=400,
+                hide_index=True,
+                use_container_width=True,
+            )
+        except Exception as e:
+            st.error(
+                "❌ Error generating detailed exclusion table. Please check your data format and ensure all required columns are present."
+            )
+            st.info("💡 Required columns: Drug Name/NDC, Status, GPI Match, Name Match")
