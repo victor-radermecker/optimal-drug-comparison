@@ -147,14 +147,25 @@ st.markdown(
 """
 )
 
-uploaded_file = st.file_uploader("📁 Upload your claims file (CSV)", type=["csv"])
+# Update uploader to support both CSV and Excel files
+uploaded_file = st.file_uploader(
+    "📁 Upload your claims file (CSV or Excel)", type=["csv", "xlsx", "xls"]
+)
 
 if not uploaded_file:
     st.info("👈 Please upload a claims file to begin.")
     st.stop()
 
-# Load Claims
-claims = pd.read_csv(uploaded_file, dtype={"GPI": str, "NDC": str})
+# Load Claims based on file format
+file_extension = uploaded_file.name.split(".")[-1].lower()
+
+if file_extension in ["xlsx", "xls"]:
+    # Handle Excel files
+    claims = pd.read_excel(uploaded_file, dtype={"GPI": str, "NDC": str})
+else:
+    # Handle CSV files
+    claims = pd.read_csv(uploaded_file, dtype={"GPI": str, "NDC": str})
+
 required_cols = ["NDC"]
 missing_req = [col for col in required_cols if col not in claims.columns]
 if missing_req:
