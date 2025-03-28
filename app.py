@@ -5,13 +5,54 @@ import re
 
 
 def clean_drug_name(name):
-    """Remove text in parentheses, 'ER', 'HCl', 'HFA', and '-CD/UC/HS Starter' from drug names."""
+    """Remove text in parentheses, specific particles, and formatting from drug names."""
     # First remove text in parentheses
     name = re.sub(r"\s*\([^)]*\)", "", name)
+
     # Remove 'ER', 'HCl', and 'HFA' (with or without spaces)
     name = re.sub(r"\s*ER\b|\s*HCl\b|\s*HFA\b", "", name)
+
     # Remove '-CD/UC/HS Starter' text
     name = re.sub(r"\s*-CD/UC/HS Starter", "", name)
+
+    # Remove additional particles (brand/formulation variants)
+    particles = [
+        "Micronized",
+        "Base",
+        "in D5W",
+        "in DSW",
+        "Sodium Succ",
+        "Combo-Supp",
+        "Adult Low St",
+        "OTC",
+        "Intensol",
+        "24HR",
+        "Complete",
+        "Maleate",
+        "Phosphate",
+        "Fumarate",
+        "Succinate",
+        "Sulfide",
+        "Bicarbonate",
+        "Tartrate",
+        "Hydrochloride",
+        "Decanoate",
+        "Maleate",
+        "VC/Codeine",
+        "Sodium",
+        "Allergy",
+        "Peroxide",
+        "Estradiol",
+        "GoodSense",
+        "Bromide",
+        "KP",
+        "3",
+    ]
+
+    # Build regex to remove these particles with proper word boundaries
+    particle_pattern = r"\s+(" + "|".join(particles) + r")\b"
+    name = re.sub(particle_pattern, "", name, flags=re.IGNORECASE)
+
     # Clean up any extra whitespace and return
     return name.strip()
 
@@ -960,14 +1001,13 @@ for i, f_name in enumerate(formularies.keys(), start=2):
             if isinstance(desc, str)
         ]
 
-        # Add Name_Match calculation with biosimilar logic
+        # Add Name_Match calculation - corrected for consistency
         df["Name_Match"] = df["drugname"].apply(
             lambda x: any(
                 x.lower() in desc.lower()
                 for desc in formularies[f_name]["ndcdescription"]
                 if isinstance(desc, str)
             )
-            or is_biosimilar_covered(x, formulary_drug_names)
         )
 
         # Consider both GPI match OR Name match for coverage
@@ -1062,16 +1102,12 @@ for i, f_name in enumerate(formularies.keys(), start=2):
         df = claims.copy()
         df["GPI_Match"] = df["GPI"].isin(formularies[f_name]["GPI"])
 
-        # Add Name_Match calculation
-        df["Name_Match"] = (
-            df["drugname"]
-            .str.lower()
-            .apply(
-                lambda x: any(
-                    x in desc.lower()
-                    for desc in formularies[f_name]["ndcdescription"]
-                    if isinstance(desc, str)
-                )
+        # Add Name_Match calculation - corrected for consistency
+        df["Name_Match"] = df["drugname"].apply(
+            lambda x: any(
+                x.lower() in desc.lower()
+                for desc in formularies[f_name]["ndcdescription"]
+                if isinstance(desc, str)
             )
         )
 
