@@ -47,9 +47,9 @@ def load_formularies():
         "Optimal": pd.read_excel(
             formulary_excel, sheet_name="Optimal Formulary", dtype={"GPI": str}
         ),
-        "OptimalPAP": pd.read_excel(
-            formulary_excel, sheet_name="Optimal PAP Coverage", dtype={"GPI": str}
-        ),
+        # "OptimalPAP": pd.read_excel(
+        #     formulary_excel, sheet_name="Optimal PAP Coverage", dtype={"GPI": str}
+        # ),
     }
 
     # Process formulary data
@@ -85,7 +85,7 @@ def load_formularies():
                     processed_formularies["Premier Plus"],
                     processed_formularies["Preferred"],
                     df,
-                    formularies_raw["OptimalPAP"],  # Include OptimalPAP
+                    # formularies_raw["OptimalPAP"],  # Include OptimalPAP
                 ]
             ).drop_duplicates()
             processed_formularies[name] = optimal_combined
