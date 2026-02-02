@@ -1,8 +1,9 @@
 pandas
 plotly
-streamlit
+streamlit>=1.31.0
 openpyxl
 pyarrow
 boto3
 python-dotenv
 botocore
+altair>=5.0.0,<6.0.0
