@@ -6,6 +6,8 @@ import re
 
 def clean_drug_name(name):
     """Remove text in parentheses, 'ER', 'HCl', 'HFA', and '-CD/UC/HS Starter' from drug names."""
+    if not isinstance(name, str):
+        return ""
     # First remove text in parentheses
     name = re.sub(r"\s*\([^)]*\)", "", name)
     # Remove 'ER', 'HCl', and 'HFA' (with or without spaces)
