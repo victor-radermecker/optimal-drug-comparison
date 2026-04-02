@@ -135,6 +135,18 @@ def prepare_claims_data(claims_df, medispan_df):
     df = df.rename(columns={"NDC": "ndc"})
     df["ndc"] = df["ndc"].apply(lambda x: x.zfill(11))
 
+    # Drop columns from claims that will come from medispan to avoid
+    # suffixed duplicates (e.g. drugname_x / drugname_y) after the merge
+    medispan_cols = {"drugname", "gpi", "therapeuticclass02"}
+    overlap = [c for c in df.columns if c in medispan_cols]
+    if overlap:
+        df = df.drop(columns=overlap)
+
+    # If claims already have an uppercase GPI column, drop it so the
+    # medispan gpi (renamed to GPI below) is the single authoritative source
+    if "GPI" in df.columns:
+        df = df.drop(columns=["GPI"])
+
     # Merge with medispan data
     merged_df = df.merge(medispan_df, on="ndc", how="left")
 
@@ -143,7 +155,7 @@ def prepare_claims_data(claims_df, medispan_df):
     merged_df["GPI"] = merged_df["GPI"].astype(str)
 
     # Clean drugname and create a cleaned_drugname column for reuse
-    merged_df["drugname"] = merged_df["drugname"].astype(str)
+    merged_df["drugname"] = merged_df["drugname"].fillna("").astype(str)
     merged_df["cleaned_drugname"] = merged_df["drugname"].apply(
         lambda x: clean_drug_name(x).lower()
     )
@@ -772,7 +784,7 @@ with tabs[0]:
         )
         fig_rate.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
         fig_rate.update_layout(showlegend=False)
-        st.plotly_chart(fig_rate, use_container_width=True)
+        st.plotly_chart(fig_rate, width="stretch")
 
     with chart_col2:
         # Second chart is now Disrupted Cost
@@ -789,7 +801,7 @@ with tabs[0]:
             # Format the cost display with $ and commas
             fig_cost.update_traces(texttemplate="$%{text:,.0f}", textposition="outside")
             fig_cost.update_layout(showlegend=False)
-            st.plotly_chart(fig_cost, use_container_width=True)
+            st.plotly_chart(fig_cost, width="stretch")
         else:
             # Display a message if cost data isn't available
             st.info(
@@ -999,7 +1011,7 @@ with tabs[1]:
             )
 
             st.dataframe(
-                styled_df, height=400, hide_index=True, use_container_width=True
+                styled_df, height=400, hide_index=True, width="stretch"
             )
 
             # Add alternatives section
@@ -1172,7 +1184,7 @@ for i, f_name in enumerate(formularies.keys(), start=2):
             values="Count",
             title="All Claims by Coverage/Similarity Level",
         )
-        st.plotly_chart(fig_sim, use_container_width=True, key=f"sim_pie_{f_name}")
+        st.plotly_chart(fig_sim, width="stretch", key=f"sim_pie_{f_name}")
 
         # ---- GPI Similarity Legend ----
         st.markdown(
@@ -1350,5 +1362,5 @@ for i, f_name in enumerate(formularies.keys(), start=2):
             detailed_exclusions.style.apply(highlight_status, axis=1).format(fmt_dict),
             height=400,
             hide_index=True,
-            use_container_width=True,  # Make table use full width
+            width="stretch",
         )
