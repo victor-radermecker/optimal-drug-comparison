@@ -772,7 +772,7 @@ with tabs[0]:
         )
         fig_rate.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
         fig_rate.update_layout(showlegend=False)
-        st.plotly_chart(fig_rate, use_container_width=True)
+        st.plotly_chart(fig_rate, width="stretch")
 
     with chart_col2:
         # Second chart is now Disrupted Cost
@@ -789,7 +789,7 @@ with tabs[0]:
             # Format the cost display with $ and commas
             fig_cost.update_traces(texttemplate="$%{text:,.0f}", textposition="outside")
             fig_cost.update_layout(showlegend=False)
-            st.plotly_chart(fig_cost, use_container_width=True)
+            st.plotly_chart(fig_cost, width="stretch")
         else:
             # Display a message if cost data isn't available
             st.info(
@@ -833,6 +833,8 @@ with tabs[0]:
         # Check both GPI and name matches for each drug, including biosimilars
         drug_coverage[f_name] = set()
         for drug in claims["drugname"].unique():
+            if not isinstance(drug, str):
+                continue
             drug_lower = drug.lower()
 
             # Check if drug name matches any NDC description
@@ -997,7 +999,7 @@ with tabs[1]:
             )
 
             st.dataframe(
-                styled_df, height=400, hide_index=True, use_container_width=True
+                styled_df, height=400, hide_index=True, width="stretch"
             )
 
             # Add alternatives section
@@ -1170,7 +1172,7 @@ for i, f_name in enumerate(formularies.keys(), start=2):
             values="Count",
             title="All Claims by Coverage/Similarity Level",
         )
-        st.plotly_chart(fig_sim, use_container_width=True, key=f"sim_pie_{f_name}")
+        st.plotly_chart(fig_sim, width="stretch", key=f"sim_pie_{f_name}")
 
         # ---- GPI Similarity Legend ----
         st.markdown(
@@ -1348,5 +1350,5 @@ for i, f_name in enumerate(formularies.keys(), start=2):
             detailed_exclusions.style.apply(highlight_status, axis=1).format(fmt_dict),
             height=400,
             hide_index=True,
-            use_container_width=True,  # Make table use full width
+            width="stretch",  # Make table use full width
         )
